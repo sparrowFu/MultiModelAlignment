@@ -65,7 +65,14 @@ def get_transforms(mode="train", size=224):
     Returns:
         albumentations变换组合
     """
+    # return A.Compose([
+    #     A.Resize(size, size, always_apply=True),
+    #     A.Normalize(max_pixel_value=255.0, always_apply=True),
+    # ])
+
+    # Albumentations的p参数控制变换是否应用，设置为1.0确保每次都应用
+    # 从Albumentations 2.0起移除always_apply参数，p = 1.0等价于always_apply=True
     return A.Compose([
-        A.Resize(size, size, always_apply=True),
-        A.Normalize(max_pixel_value=255.0, always_apply=True),
+        A.Resize(size, size, p = 1.0),
+        A.Normalize(max_pixel_value=255.0, p = 1.0),
     ])

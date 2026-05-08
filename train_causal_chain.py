@@ -32,7 +32,7 @@ def load_encoders(device):
     clip_model_path = "D:\\code\\causality\\baseline\\best.pt"
     if os.path.exists(clip_model_path):
         print(f"加载预训练CLIP模型: {clip_model_path}")
-        checkpoint = torch.load(clip_model_path, map_location=device)
+        checkpoint = torch.load(clip_model_path, map_location=device, weights_only=False)
 
         # CLIP模型保存的是完整模型状态，需要分别提取编码器
         image_encoder.load_state_dict({

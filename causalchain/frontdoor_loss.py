@@ -72,10 +72,22 @@ class FrontDoorLoss(nn.Module):
 
         # 计算相关系数作为正交性度量
         def correlation(x, y):
+
+            # print(f"计算相关系数，输入维度: {x.shape}, {y.shape}")
             x_mean = x.mean(dim=-1, keepdim=True)
             y_mean = y.mean(dim=-1, keepdim=True)
             x_centered = x - x_mean
             y_centered = y - y_mean
+
+            # 填充到较大维度
+            max_dim = max(x.size(-1), y.size(-1))
+            if x.size(-1) < max_dim:
+                padding = max_dim - x.size(-1)
+                x_centered = F.pad(x_centered, (0, padding))
+            if y.size(-1) < max_dim:
+                padding = max_dim - y.size(-1)
+                y_centered = F.pad(y_centered, (0, padding))
+
             cov = (x_centered * y_centered).mean(dim=-1)
             x_std = x_centered.std(dim=-1)
             y_std = y_centered.std(dim=-1)

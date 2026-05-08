@@ -22,9 +22,9 @@ class FrontDoorConfig(BaseConfig):
     lambda_reconstruction = 0.5   # 重建损失权重
 
     # 训练参数
-    epochs = 10
+    epochs = 2
     batch_size = 32
-    lr = 1e-4
+    lr = 1e-5
     weight_decay = 1e-4
 
     # 温度参数（用于对比学习）
