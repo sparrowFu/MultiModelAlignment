@@ -1,0 +1,52 @@
+baseline/
+│
+├── 📄 README.md                    # 项目说明文档
+├── 📄 QUICKSTART.md                # 快速开始指南
+├── 📄 ARCHITECTURE.md              # 架构详细说明
+├── 📄 REFACTORING_SUMMARY.md       # 重构总结
+├── 📄 .gitignore                   # Git忽略文件
+│
+├── 🚀 train.py                     # 统一训练入口
+├── 🎯 evaluate.py                  # 统一评估入口
+│
+├── 📦 common/                      # 共享工具模块
+│   ├── __init__.py
+│   ├── config.py                   # 基础配置类
+│   ├── dataset.py                  # 数据集基类
+│   ├── data.py                     # 数据处理工具
+│   ├── metrics.py                  # 评估指标工具
+│   └── training.py                 # 训练和验证函数
+│
+├── 🤖 models/                      # 模型实现目录
+│   ├── __init__.py
+│   │
+│   ├── 📌 clip/                    # CLIP模型
+│   │   ├── __init__.py
+│   │   ├── config.py               # CLIP特定配置
+│   │   ├── model.py                # CLIP模型定义
+│   │   ├── train.py                # CLIP训练脚本
+│   │   └── evaluate.py             # CLIP评估脚本
+│   │
+│   └── 📋 template/                # 新模型模板
+│       ├── __init__.py
+│       ├── config.py               # 模板配置
+│       ├── model.py                # 模板模型定义
+│       ├── train.py                # 模板训练脚本
+│       └── evaluate.py             # 模板评估脚本
+│
+└── 💾 best.pt                      # 训练好的模型权重
+
+文件统计:
+- 总文件数: 26个
+- Python文件: 20个
+- 文档文件: 4个
+- 配置文件: 1个
+- 模型权重: 1个
+
+代码统计:
+- 总代码行数: ~1500行
+- 共享工具: ~400行
+- CLIP模型: ~400行
+- 模板文件: ~300行
+- 入口脚本: ~100行
+- 文档: ~800行
