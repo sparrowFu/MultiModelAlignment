@@ -1,7 +1,20 @@
 """
-FrontDoorCausalChain 训练脚本
+FrontDoor Causal Chain 训练脚本
+
+运行方式:
+    python models/frontdoor/train.py
+    python models/frontdoor/train.py --dataset flickr30k
+    python models/frontdoor/train.py --dataset mm_celeba_hq
+    python models/frontdoor/train.py --dataset mscoco_15k
 """
 import os
+import sys
+import argparse
+
+# 添加项目根目录到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -9,20 +22,77 @@ from tqdm import tqdm
 import pandas as pd
 from transformers import DistilBertTokenizer
 
-from .frontdoor_config import FrontDoorConfig
-from .frontdoor_model import FrontDoorCausalModel, FrontDoorWithEncoders
-from .frontdoor_loss import FrontDoorLoss
-from baseline.common.data import make_train_valid_dfs, build_loaders
-from baseline.common.dataset import BaseDataset, get_transforms
-from baseline.models.clip.model import ImageEncoder, TextEncoder
+from .config import FrontDoorConfig
+from .model import FrontDoorCausalModel, FrontDoorWithEncoders
+from .loss import FrontDoorLoss
+from common.data import make_train_valid_dfs, build_loaders
+from common.dataset import BaseDataset, get_transforms
+from models.clip.model import ImageEncoder, TextEncoder
 
 
-def load_encoders(device):
+def parse_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description='FrontDoor 因果链训练')
+
+    parser.add_argument(
+        '--model',
+        type=str,
+        default='clip',
+        choices=['clip', 'frontdoor'],
+        help='选择要训练的模型 (clip/frontdoor)'
+    )
+
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        default='flickr30k',
+        choices=['flickr30k', 'mm_celeba_hq', 'mscoco_15k'],
+        help='选择数据集: flickr30k, mm_celeba_hq, mscoco_15k (默认: flickr30k)'
+    )
+
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=None,
+        help='批大小 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=None,
+        help='训练轮数 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--lr',
+        type=float,
+        default=None,
+        help='学习率 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='启用调试模式（使用少量数据）'
+    )
+
+    parser.add_argument(
+        '--no-resume',
+        action='store_true',
+        help='不从 checkpoint 恢复训练'
+    )
+
+    return parser.parse_args()
+
+
+def load_encoders(device, config):
     """
     加载预训练的图像和文本编码器
 
     Args:
         device: torch设备
+        config: 配置对象
 
     Returns:
         image_encoder, text_encoder: 预训练编码器
@@ -31,13 +101,12 @@ def load_encoders(device):
     text_encoder = TextEncoder().to(device)
 
     # 加载预训练权重（如果存在）
-    clip_model_path = "D:\\code\\causality\\baseline\\best.pt"
+    clip_model_path = os.path.join(config.project_root, 'results', 'clipmodel', 'best_model_flickr30k.pt')
     if os.path.exists(clip_model_path):
         print(f"加载预训练CLIP模型: {clip_model_path}")
         checkpoint = torch.load(clip_model_path, map_location=device)
 
         # CLIP模型保存的是完整模型状态，需要分别提取编码器
-        # 假设checkpoint是CLIPModel的state_dict
         if 'image_encoder.model' in checkpoint:
             image_encoder.load_state_dict({
                 k.replace('image_encoder.', ''): v
@@ -206,12 +275,29 @@ def train(config=None, resume=True):
         config: FrontDoorConfig 配置对象
         resume: 是否从checkpoint恢复训练
     """
+    # 解析命令行参数
+    args = parse_args()
+
+    # 创建配置
     config = config or FrontDoorConfig()
+
+    # 应用命令行参数覆盖
+    config.dataset_name = args.dataset
+    if args.batch_size is not None:
+        config.batch_size = args.batch_size
+    if args.epochs is not None:
+        config.epochs = args.epochs
+    if args.lr is not None:
+        config.lr = args.lr
+    if args.debug:
+        config.debug = True
+
     device = config.device
 
     print("=" * 60)
     print("FrontDoor 因果链训练")
     print("=" * 60)
+    print(f"数据集: {config.dataset_name}")
     print(f"设备: {device}")
     print(f"共享语义维度: {config.shared_dim}")
     print(f"Batch大小: {config.batch_size}")
@@ -219,7 +305,14 @@ def train(config=None, resume=True):
 
     # 准备数据
     print("\n准备数据...")
-    train_df, valid_df = make_train_valid_dfs(test_size=0.2, random_state=42)
+    print(f"数据集路径: {config.dataset_path}")
+    print(f"图片路径: {config.image_path}")
+
+    train_df, valid_df = make_train_valid_dfs(
+        test_size=0.2,
+        random_state=42,
+        config=config
+    )
     print(f"训练样本数: {len(train_df)}")
     print(f"验证样本数: {len(valid_df)}")
 
@@ -229,12 +322,12 @@ def train(config=None, resume=True):
         model_path,
         local_files_only=True
     )
-    train_loader = build_loaders(train_df, tokenizer, mode="train")
-    valid_loader = build_loaders(valid_df, tokenizer, mode="valid")
+    train_loader = build_loaders(train_df, tokenizer, mode="train", config=config)
+    valid_loader = build_loaders(valid_df, tokenizer, mode="valid", config=config)
 
     # 加载预训练编码器
     print("\n加载预训练编码器...")
-    image_encoder, text_encoder = load_encoders(device)
+    image_encoder, text_encoder = load_encoders(device, config)
 
     # 创建因果模型
     print("\n初始化因果模型...")
@@ -268,7 +361,7 @@ def train(config=None, resume=True):
     start_epoch = 0
     best_loss = float('inf')
 
-    if resume:
+    if resume and not args.no_resume:
         start_epoch, best_loss = load_checkpoint(
             model, optimizer, config.checkpoint_path, device
         )
@@ -327,8 +420,5 @@ def train(config=None, resume=True):
 
 
 if __name__ == "__main__":
-    # 创建配置
-    config = FrontDoorConfig()
-
     # 训练模型
-    model = train(config, resume=True)
+    model = train(config=None, resume=True)

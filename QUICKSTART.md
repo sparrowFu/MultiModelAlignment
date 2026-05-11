@@ -1,80 +1,209 @@
 # 快速开始指南
 
-## 安装依赖
+本指南将帮助你快速上手 FrontdoorCausalChain 项目。
+
+## 环境要求
+
+- Python 3.8+
+- CUDA 11.0+ (GPU 加速)
+
+## 安装步骤
+
+### 1. 安装依赖
 
 ```bash
-pip install torch transformers timm albumentations sklearn pandas opencv-python matplotlib tqdm
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+pip install transformers timm albumentations scikit-learn pandas opencv-python matplotlib tqdm pyarrow
 ```
 
-## 数据准备
+### 2. 准备数据集
 
-1. 下载Flickr30k数据集
-2. 解压到 `../datasets/flickr30k/` 目录
-3. 确保目录结构如下：
-```
-../datasets/flickr30k/
-├── flickr30k_images/
-│   └── *.jpg
-└── captions.txt
-```
+项目支持三种数据集，选择一种准备：
 
-## 训练模型
-
-### 方式1: 使用统一入口
+#### Flickr30k (推荐新手)
 
 ```bash
-# 训练CLIP模型
-python train.py --model clip --model-path best.pt
+# 下载并解压到 datasets/flickr30k/
+# 目录结构:
+# datasets/flickr30k/
+# ├── flickr30k_images/
+# │   ├── 1000092795.jpg
+# │   └── ...
+# └── captions.txt
 ```
 
-### 方式2: 直接运行模型脚本
+#### MM-CELEBA-HQ
 
 ```bash
-# 训练CLIP模型
-cd models/clip
-python train.py
+# 下载并解压到 datasets/MM-CELEBA-HQ/
+# 目录结构:
+# datasets/MM-CELEBA-HQ/
+# ├── images/
+# │   ├── 0.jpg
+# │   └── ...
+# └── text/
+#     ├── 0.txt
+#     └── ...
 ```
 
-## 评估模型
-
-### 方式1: 使用统一入口
+#### MSCOCO-15k
 
 ```bash
-# 评估CLIP模型
-python evaluate.py --model clip --model-path best.pt --query "a dog running in the park"
+# 下载并解压到 datasets/mscoco_15k/
+# 目录结构:
+# datasets/mscoco_15k/
+# ├── mscoco_15k_train/
+# │   └── data.arrow
+# └── mscoco_15k_test/
+#     └── data.arrow
 ```
 
-### 方式2: 直接运行模型脚本
+### 3. 准备预训练模型
+
+预训练模型已包含在 `PreTrainedModels/` 目录中：
+
+```
+PreTrainedModels/
+├── distilbert_base_uncased/
+└── resnet50/
+```
+
+## 快速运行
+
+### 训练 FrontDoor 模型
 
 ```bash
-# 评估CLIP模型
-cd models/clip
+# 使用默认配置（flickr30k 数据集）
+python train_causal_chain.py
+
+# 使用其他数据集
+python train_causal_chain.py --dataset mm_celeba_hq
+python train_causal_chain.py --dataset mscoco_15k
+
+# 调整训练参数
+python train_causal_chain.py --dataset flickr30k --batch-size 64 --epochs 5
+
+# 调试模式（快速验证代码）
+python train_causal_chain.py --debug
+```
+
+### 评估模型
+
+```bash
+# 评估 FrontDoor 模型
+cd models/frontdoor
 python evaluate.py
+
+# 评估 CLIP 模型
+cd ..
+python evaluate.py --model clip --model-path best.pt
 ```
 
-## 配置修改
+## 命令行参数说明
 
-所有配置都可以在相应的 `config.py` 文件中修改：
+### train_causal_chain.py
 
-### 修改全局配置
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `--dataset` | 数据集选择 (flickr30k/mm_celeba_hq/mscoco_15k) | flickr30k |
+| `--batch-size` | 批大小 | 32 |
+| `--epochs` | 训练轮数 | 2 |
+| `--lr` | 学习率 | 1e-5 |
+| `--debug` | 启用调试模式 | False |
+| `--device` | 设备选择 (cuda/cpu) | auto |
 
-编辑 `common/config.py`:
+示例：
 
-```python
-class BaseConfig:
-    batch_size = 32  # 修改批大小
-    epochs = 10      # 修改训练轮数
-    # ... 其他配置
+```bash
+# 完整参数示例
+python train_causal_chain.py \
+    --dataset flickr30k \
+    --batch-size 64 \
+    --epochs 10 \
+    --lr 1e-4 \
+    --device cuda
 ```
 
-### 修改特定模型配置
+## 配置文件
 
-编辑 `models/clip/config.py`:
+### 修改默认配置
+
+编辑 `models/frontdoor/config.py`：
 
 ```python
-class CLIPConfig(BaseConfig):
-    model_name = 'resnet50'  # 修改图像编码器
-    # ... 其他CLIP特定配置
+class FrontDoorConfig(BaseConfig):
+    def __init__(self):
+        super().__init__()
+
+        # 数据集选择
+        self.dataset_name = 'flickr30k'  # 或 'mm_celeba_hq', 'mscoco_15k'
+
+        # 模型参数
+        self.shared_dim = 256
+        self.private_ratio = 0.3
+
+        # 训练参数
+        self.batch_size = 32
+        self.epochs = 2
+        self.lr = 1e-5
+
+        # 损失权重
+        self.lambda_alignment = 1.0
+        self.lambda_orthogonal = 0.1
+        self.lambda_contrastive = 1.0
+        self.lambda_reconstruction = 0.5
+```
+
+### 修改基础配置
+
+编辑 `common/config.py` 中的 `BaseConfig` 类，所有模型都会继承这些配置。
+
+## 常见问题
+
+### Q1: 如何切换数据集？
+
+**A:** 使用 `--dataset` 参数：
+
+```bash
+python train_causal_chain.py --dataset mm_celeba_hq
+```
+
+或在配置文件中设置：
+
+```python
+config.dataset_name = 'mm_celeba_hq'
+```
+
+### Q2: 如何使用 GPU？
+
+**A:** 确保安装了 CUDA 版本的 PyTorch，代码会自动检测 GPU。手动指定设备：
+
+```bash
+python train_causal_chain.py --device cuda
+```
+
+### Q3: 内存不足怎么办？
+
+**A:** 减小 batch_size：
+
+```bash
+python train_causal_chain.py --batch-size 16
+```
+
+### Q4: 如何快速验证代码？
+
+**A:** 使用调试模式，只使用少量数据：
+
+```bash
+python train_causal_chain.py --debug
+```
+
+### Q5: 数据集路径不对怎么办？
+
+**A:** 检查 `common/config.py` 中的 `project_root` 配置，确保路径与你的实际目录一致：
+
+```python
+project_root = "D:\\code\\causality\\FrontdoorCausalChain"
 ```
 
 ## 添加新模型
@@ -95,89 +224,52 @@ vim models/my_model/model.py
 cd models/my_model
 python train.py
 
-# 5. 更新主入口
-vim ../train.py
-vim ../evaluate.py
+# 5. 更新 models/__init__.py
+from . import my_model
 ```
-
-## 常见问题
-
-### Q: 如何修改数据路径？
-
-A: 在 `common/config.py` 中修改 `image_path` 和 `captions_path`。
-
-### Q: 如何使用不同的backbone？
-
-A: 在对应模型的 `config.py` 中修改 `model_name`。
-
-### Q: 如何调整学习率？
-
-A: 在对应模型的 `config.py` 中修改 `image_encoder_lr`、`text_encoder_lr` 等参数。
-
-### Q: 训练时显存不足怎么办？
-
-A: 减小 `batch_size` 或使用梯度累积。
 
 ## 进阶用法
 
 ### 自定义数据集
 
-继承 `BaseDataset` 并实现自己的数据集类：
+继承 `DatasetLoader` 并实现自己的数据集加载器：
 
 ```python
-from common.dataset import BaseDataset
+from common.dataset_loaders import DatasetLoader
 
-class MyDataset(BaseDataset):
-    def __init__(self, ...):
-        super().__init__(...)
-        # 你的自定义逻辑
+class MyDatasetLoader(DatasetLoader):
+    def load_data(self, test_size=0.2, random_state=42):
+        # 实现数据加载逻辑
+        return train_df, valid_df
 ```
 
-### 自定义损失函数
+### 实验记录
 
-在模型的 `forward` 方法中实现自定义损失计算。
-
-### 多GPU训练
-
-使用PyTorch的 `DistributedDataParallel` 或 `DataParallel`。
-
-## 实验记录
-
-建议使用实验跟踪工具（如wandb、tensorboard）记录实验结果。
-
-### 示例：集成wandb
+建议使用实验跟踪工具（如 wandb、tensorboard）记录实验结果。
 
 ```python
 import wandb
 
 # 在训练开始前
-wandb.init(project="my-project", config=config.to_dict())
+wandb.init(project="my-project", config=config.__dict__)
 
 # 在训练循环中
-wandb.log({"train_loss": train_loss.avg, "valid_loss": valid_loss.avg})
+wandb.log({"train_loss": train_loss, "valid_loss": valid_loss})
 ```
 
-## 性能优化
+### 多GPU训练
 
-### 数据加载优化
+使用 PyTorch 的 `DistributedDataParallel`：
 
-- 增加 `num_workers`
-- 使用 `pin_memory=True`
+```python
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-### 训练速度优化
-
-- 使用混合精度训练 (AMP)
-- 梯度累积
-- 学习率warmup
-
-### 模型优化
-
-- 模型蒸馏
-- 知识蒸馏
-- 模型剪枝
+model = DDP(model, device_ids=[local_rank])
+```
 
 ## 下一步
 
-- 查看 [README.md](README.md) 了解详细架构
-- 查看 `models/template/` 学习如何添加新模型
-- 查看各个模型的实现源码
+- 阅读 [ARCHITECTURE.md](ARCHITECTURE.md) 了解项目架构
+- 查看 [models/frontdoor/](models/frontdoor/) 了解模型实现
+- 尝试添加自己的模型或数据集

@@ -10,8 +10,12 @@ class CLIPConfig(BaseConfig):
 
     # 模型名称
     model_name = 'resnet50'
-    text_model_path = 'D:\\code\\causality\\models\\distilbert_base_uncased'
+    text_model_path = 'D:\\code\\causality\\FrontdoorCausalChain\\PreTrainedModels\\distilbert_base_uncased\\'
     text_encoder_model = "distilbert-base-uncased"
+
+    # 模型保存路径
+    model_save_path = "D:\\code\\causality\\FrontdoorCausalChain\\results\\clipmodel\\best_model.pt"
+    checkpoint_path = "D:\\code\\causality\\FrontdoorCausalChain\\results\\clipmodel\\checkpoint.pt"
 
     # 投影头参数
     num_projection_layers = 1

@@ -22,7 +22,7 @@ class ImageEncoder(nn.Module):
             pretrained,
             num_classes=0,
             global_pool="avg",
-            pretrained_cfg_overlay=dict(file="D:\\code\\causality\\models\\resnet50\\pytorch_model.bin")
+            pretrained_cfg_overlay=dict(file="D:\\code\\causality\\FrontdoorCausalChain\\PreTrainedModels\\resnet50\\pytorch_model.bin")
         )
         for p in self.model.parameters():
             p.requires_grad = trainable if trainable is not None else config.trainable

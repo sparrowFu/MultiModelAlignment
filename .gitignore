@@ -41,7 +41,10 @@ env/
 *.ckpt
 
 # Data
-../datasets/
+datasets/
+
+# PreTrained models
+PreTrainedModels/
 
 # Logs
 logs/
@@ -51,3 +54,9 @@ wandb/
 # OS
 .DS_Store
 Thumbs.db
+
+# Config
+config.ini
+
+# results
+results/

@@ -1,10 +1,10 @@
 """
-FrontDoorCausalChain 可训练模型
+FrontDoor Causal Chain 可训练模型
 """
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .frontdoor_config import FrontDoorConfig
+from .config import FrontDoorConfig
 
 
 class FrontDoorCausalModel(nn.Module):

@@ -2,12 +2,14 @@
 FrontDoor 因果链训练脚本（独立运行版本）
 
 运行方式:
-    python -m baseline.train_causal_chain
-    或
-    python baseline/train_causal_chain.py
+    python train_causal_chain.py
+    python train_causal_chain.py --dataset flickr30k
+    python train_causal_chain.py --dataset mm_celeba_hq
+    python train_causal_chain.py --dataset mscoco_15k
 """
 import os
 import sys
+import argparse
 
 # 添加项目根目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,20 +18,70 @@ import torch
 from tqdm import tqdm
 from transformers import DistilBertTokenizer
 
-from baseline.causalchain.frontdoor_config import FrontDoorConfig
-from baseline.causalchain.frontdoor_model import FrontDoorCausalModel, FrontDoorWithEncoders
-from baseline.causalchain.frontdoor_loss import FrontDoorLoss
-from baseline.common.data import make_train_valid_dfs, build_loaders
-from baseline.models.clip.model import ImageEncoder, TextEncoder
+from models.frontdoor.config import FrontDoorConfig
+from models.frontdoor.model import FrontDoorCausalModel, FrontDoorWithEncoders
+from models.frontdoor.loss import FrontDoorLoss
+from common.data import make_train_valid_dfs, build_loaders
+from models.clip.model import ImageEncoder, TextEncoder
 
 
-def load_encoders(device):
+def parse_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description='FrontDoor 因果链训练')
+
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        default='flickr30k',
+        choices=['flickr30k', 'mm_celeba_hq', 'mscoco_15k'],
+        help='选择数据集: flickr30k, mm_celeba_hq, mscoco_15k (默认: flickr30k)'
+    )
+
+    parser.add_argument(
+        '--batch-size',
+        type=int,
+        default=None,
+        help='批大小 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=None,
+        help='训练轮数 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--lr',
+        type=float,
+        default=None,
+        help='学习率 (覆盖配置文件)'
+    )
+
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='启用调试模式（使用少量数据）'
+    )
+
+    parser.add_argument(
+        '--device',
+        type=str,
+        default=None,
+        choices=['cuda', 'cpu'],
+        help='设备选择 (cuda/cpu)'
+    )
+
+    return parser.parse_args()
+
+
+def load_encoders(device, config):
     """加载预训练的图像和文本编码器"""
     image_encoder = ImageEncoder().to(device)
     text_encoder = TextEncoder().to(device)
 
     # 加载预训练权重（如果存在）
-    clip_model_path = "D:\\code\\causality\\baseline\\best.pt"
+    clip_model_path = os.path.join(config.project_root, 'best.pt')
     if os.path.exists(clip_model_path):
         print(f"加载预训练CLIP模型: {clip_model_path}")
         checkpoint = torch.load(clip_model_path, map_location=device, weights_only=False)
@@ -114,28 +166,58 @@ def valid_epoch(model, dataloader, criterion, device):
 
 def main():
     """主训练函数"""
+    # 解析命令行参数
+    args = parse_args()
+
+    # 创建配置
     config = FrontDoorConfig()
+
+    # 应用命令行参数覆盖
+    config.dataset_name = args.dataset
+    if args.batch_size is not None:
+        config.batch_size = args.batch_size
+    if args.epochs is not None:
+        config.epochs = args.epochs
+    if args.lr is not None:
+        config.lr = args.lr
+    if args.debug:
+        config.debug = True
+    if args.device is not None:
+        config.device = torch.device(args.device)
+
     device = config.device
 
     print("=" * 60)
     print("FrontDoor 因果链训练")
     print("=" * 60)
+    print(f"数据集: {config.dataset_name}")
+    print(f"设备: {device}")
+    print(f"批大小: {config.batch_size}")
+    print(f"训练轮数: {config.epochs}")
+    print(f"学习率: {config.lr}")
 
     # 准备数据
     print("\n准备数据...")
-    train_df, valid_df = make_train_valid_dfs(test_size=0.2, random_state=42)
+    print(f"数据集路径: {config.dataset_path}")
+    print(f"图片路径: {config.image_path}")
+
+    train_df, valid_df = make_train_valid_dfs(
+        test_size=0.2,
+        random_state=42,
+        config=config
+    )
     print(f"训练样本: {len(train_df)}, 验证样本: {len(valid_df)}")
 
     tokenizer = DistilBertTokenizer.from_pretrained(
         config.text_model_path,
         local_files_only=True
     )
-    train_loader = build_loaders(train_df, tokenizer, mode="train")
-    valid_loader = build_loaders(valid_df, tokenizer, mode="valid")
+    train_loader = build_loaders(train_df, tokenizer, mode="train", config=config)
+    valid_loader = build_loaders(valid_df, tokenizer, mode="valid", config=config)
 
     # 加载编码器
     print("\n加载预训练编码器...")
-    image_encoder, text_encoder = load_encoders(device)
+    image_encoder, text_encoder = load_encoders(device, config)
 
     # 创建模型
     causal_model = FrontDoorCausalModel(

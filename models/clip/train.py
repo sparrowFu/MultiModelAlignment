@@ -70,7 +70,8 @@ def train(model_path="best.pt", resume=False):
         # 保存最佳模型
         if valid_loss.avg < best_loss:
             best_loss = valid_loss.avg
-            torch.save(model.state_dict(), model_path)
+            os.makedirs(os.path.dirname(config.model_save_path), exist_ok=True)
+            torch.save(model.state_dict(), config.model_save_path)
             print(f"✅ 保存最佳模型! 验证损失: {best_loss:.4f}")
 
         lr_scheduler.step(valid_loss.avg)
