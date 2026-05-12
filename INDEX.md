@@ -110,11 +110,11 @@ FrontDoor 因果链模型实现。
 | [train.py](models/template/train.py) | 模板训练脚本 |
 | [evaluate.py](models/template/evaluate.py) | 模板评估脚本 |
 
-## datasets/ 目录
+## data/ 目录
 
 数据集存储目录。
 
-### datasets/flickr30k/
+### data/flickr30k/
 
 Flickr30k 数据集。
 
@@ -126,7 +126,7 @@ flickr30k/
 └── captions.txt         # 图片描述文件
 ```
 
-### datasets/MM-CELEBA-HQ/
+### data/MM-CELEBA-HQ/
 
 MM-CELEBA-HQ 数据集。
 
@@ -140,7 +140,7 @@ MM-CELEBA-HQ/
     └── ...
 ```
 
-### datasets/mscoco_15k/
+### data/mscoco_15k/
 
 MSCOCO-15k 数据集。
 

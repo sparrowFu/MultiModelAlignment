@@ -25,12 +25,12 @@ class BaseConfig:
     def dataset_path(self):
         """获取当前选择的数据集路径"""
         dataset_paths = {
-            'flickr30k': os.path.join(self.project_root, 'datasets', 'flickr30k'),
-            'mm_celeba_hq': os.path.join(self.project_root, 'datasets', 'MM-CELEBA-HQ'),
-            'mscoco_15k': os.path.join(self.project_root, 'datasets', 'mscoco_15k')
+            'flickr30k': os.path.join(self.project_root, 'data', 'flickr30k'),
+            'mm_celeba_hq': os.path.join(self.project_root, 'data', 'MM-CELEBA-HQ'),
+            'mscoco_15k': os.path.join(self.project_root, 'data', 'mscoco_15k')
         }
         return dataset_paths.get(self.dataset_name,
-                                 os.path.join(self.project_root, 'datasets', 'flickr30k'))
+                                 os.path.join(self.project_root, 'data', 'flickr30k'))
 
     @property
     def image_path(self):

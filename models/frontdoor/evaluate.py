@@ -215,7 +215,7 @@ def evaluate(config=None, num_samples=100):
     print("\n开始评估...")
     results = []
 
-    from common.dataset import get_transforms
+    from FrontdoorCausalChain.common.BaseDataset import get_transforms
     from PIL import Image as PILImage
 
     for idx, row in tqdm(valid_df.iterrows(), total=len(valid_df), desc="Evaluating"):

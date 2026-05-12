@@ -42,7 +42,7 @@ env/
 *.ckpt
 
 # Data
-datasets/
+data/
 
 # PreTrained models
 PreTrainedModels/

@@ -3,7 +3,7 @@
 """
 import torch
 from .config import BaseConfig as CFG
-from .dataset import BaseDataset, ArrowDataset, get_transforms
+from .BaseDataset import BaseDataset, ArrowDataset, get_transforms
 from .dataset_loaders import make_train_valid_dfs as load_data
 
 

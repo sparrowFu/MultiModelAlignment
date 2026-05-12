@@ -23,9 +23,9 @@ pip install transformers timm albumentations scikit-learn pandas opencv-python m
 #### Flickr30k (推荐新手)
 
 ```bash
-# 下载并解压到 datasets/flickr30k/
+# 下载并解压到 data/flickr30k/
 # 目录结构:
-# datasets/flickr30k/
+# data/flickr30k/
 # ├── flickr30k_images/
 # │   ├── 1000092795.jpg
 # │   └── ...
@@ -35,9 +35,9 @@ pip install transformers timm albumentations scikit-learn pandas opencv-python m
 #### MM-CELEBA-HQ
 
 ```bash
-# 下载并解压到 datasets/MM-CELEBA-HQ/
+# 下载并解压到 data/MM-CELEBA-HQ/
 # 目录结构:
-# datasets/MM-CELEBA-HQ/
+# data/MM-CELEBA-HQ/
 # ├── images/
 # │   ├── 0.jpg
 # │   └── ...
@@ -49,9 +49,9 @@ pip install transformers timm albumentations scikit-learn pandas opencv-python m
 #### MSCOCO-15k
 
 ```bash
-# 下载并解压到 datasets/mscoco_15k/
+# 下载并解压到 data/mscoco_15k/
 # 目录结构:
-# datasets/mscoco_15k/
+# data/mscoco_15k/
 # ├── mscoco_15k_train/
 # │   └── data.arrow
 # └── mscoco_15k_test/

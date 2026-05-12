@@ -26,7 +26,7 @@ from .config import FrontDoorConfig
 from .model import FrontDoorCausalModel, FrontDoorWithEncoders
 from .loss import FrontDoorLoss
 from common.data import make_train_valid_dfs, build_loaders
-from common.dataset import BaseDataset, get_transforms
+from FrontdoorCausalChain.common.BaseDataset import BaseDataset, get_transforms
 from models.clip.model import ImageEncoder, TextEncoder
 
 

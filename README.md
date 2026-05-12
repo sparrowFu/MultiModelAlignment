@@ -44,7 +44,7 @@ FrontdoorCausalChain/
 │       ├── train.py
 │       └── evaluate.py
 │
-├── datasets/                  # 数据集目录
+├── data/                  # 数据集目录
 │   ├── flickr30k/            # Flickr30k 数据集
 │   ├── MM-CELEBA-HQ/         # MM-CELEBA-HQ 数据集
 │   └── mscoco_15k/           # MSCOCO-15k 数据集
